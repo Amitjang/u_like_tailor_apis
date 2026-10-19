@@ -92,3 +92,28 @@
  *       200: { description: '{success, message, data}' }
  */
 
+/**
+ * @swagger
+ * /api/admin/app-config:
+ *   get:
+ *     tags: [admin]
+ *     summary: App config dekho
+ *     description: ""
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/admin/app-config:
+ *   put:
+ *     tags: [admin]
+ *     summary: Naya version / force update
+ *     description: "Body: {'android':{'latestVersion','minVersion','storeUrl'},'ios':{...},'forceUpdate':true,'message','messageHi','privacyUrl','termsUrl'}"
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */

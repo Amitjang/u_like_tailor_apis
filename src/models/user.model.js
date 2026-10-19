@@ -10,6 +10,12 @@ const User = model('User', schema({
   email: { type: String, lowercase: true, trim: true, index: true, sparse: true },
   googleId: { type: String, unique: true, sparse: true },
   appleId: { type: String, unique: true, sparse: true },
+  // Staff login (maalik ka banaya): mobile + password. Google/Apple wale users mein ye khaali.
+  loginPhone: { type: String, unique: true, sparse: true }, // +91XXXXXXXXXX
+  passwordHash: String,
+  authType: { type: String, enum: ['social', 'phone', 'password'], default: 'social' },
+  failedLogins: { type: Number, default: 0 },
+  lockedUntil: Date,
   name: String,
   preferredLanguage: { type: String, enum: LANGS, default: 'hi' },
   isActive: { type: Boolean, default: true },

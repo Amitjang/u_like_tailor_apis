@@ -58,3 +58,14 @@
  *       200: { description: '{success, message, data}' }
  */
 
+/**
+ * @swagger
+ * /api/public/app-config:
+ *   get:
+ *     tags: [public]
+ *     summary: App config / force update
+ *     description: "Query: ?platform=android|ios&version=1.0.0 -> {updateRequired, latestVersion, message, storeUrl, privacyUrl, termsUrl}"
+ *     security: []
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */

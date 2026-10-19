@@ -5,6 +5,8 @@
 const i18n = require('../utils/i18n');
 const { User, OtpRequest, Session, Shop } = require('../models');
 const { verifyGoogle, verifyApple } = require('../utils/social');
+const { verifyPassword, hashPassword, passwordOk } = require('../utils/password');
+const permissions = require('../utils/permissions');
 const { normalizePhone } = require('../utils/phone');
 const { generateOtp, hashOtp, safeEqual, sha256, newRefreshToken, signAccess } = require('../utils/auth');
 const { h, ok, bad, unauth, forbidden, tooMany, conflict, requireBody, ApiError } = require('../utils/http.helpers');
@@ -136,6 +138,49 @@ function socialLogin(provider) {
 const googleLogin = socialLogin('google');
 const appleLogin = socialLogin('apple');
 
+// ---------------- Staff login (mobile + password, maalik ka banaya) ----------------
+const STAFF_MAX_FAILS = 5;
+const STAFF_LOCK_MS = 15 * 60 * 1000;
+
+// Body: {"phone":"9876543210","password":"...","deviceId","deviceName","appVersion","fcmToken"}
+// POST /api/auth/staff-login  -> { tokens, isNewUser:false, needsPhone:false, me }
+const staffLogin = h(async (req, res) => {
+  const { cfg } = req.app.locals;
+  const body = requireBody(req);
+  const phone = normalizePhone(body.phone);
+  if (!phone || typeof body.password !== 'string' || !body.password) throw bad('staff_login_wrong');
+  const user = await User.findOne({ loginPhone: phone, authType: 'password' }).lean();
+  if (!user) throw unauth('staff_login_wrong');
+  if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) throw tooMany('staff_login_locked');
+  if (!verifyPassword(body.password, user.passwordHash)) {
+    const fails = (user.failedLogins || 0) + 1;
+    await User.updateOne({ _id: user._id }, fails >= STAFF_MAX_FAILS
+      ? { $set: { failedLogins: 0, lockedUntil: new Date(Date.now() + STAFF_LOCK_MS) } }
+      : { $set: { failedLogins: fails } });
+    throw unauth(fails >= STAFF_MAX_FAILS ? 'staff_login_locked' : 'staff_login_wrong');
+  }
+  if (!user.isActive) throw forbidden('account_disabled');
+  const active = await Shop.exists({ deletedAt: null, members: { $elemMatch: { userId: user._id, isActive: true } } });
+  if (!active) throw forbidden('staff_access_disabled');
+  await User.updateOne({ _id: user._id }, { $set: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } });
+  const tokens = await newSession(cfg, user._id, body);
+  applyUserLang(req, res, user.preferredLanguage);
+  ok(res, { tokens, isNewUser: false, needsPhone: false, me: await profile(user._id) });
+});
+
+// Body: {"oldPassword","newPassword"} — staff apna password badle (baaki phones se logout)
+// POST /api/auth/change-password
+const changePassword = h(async (req, res) => {
+  const b = requireBody(req);
+  const user = await User.findById(req.user._id).lean();
+  if (user.authType !== 'password') throw bad('password_login_only');
+  if (!verifyPassword(String(b.oldPassword || ''), user.passwordHash)) throw bad('old_password_wrong');
+  if (!passwordOk(b.newPassword)) throw bad('password_too_short');
+  await User.updateOne({ _id: user._id }, { $set: { passwordHash: hashPassword(b.newPassword) } });
+  await Session.updateMany({ userId: user._id, _id: { $ne: req.sessionId }, revokedAt: null }, { $set: { revokedAt: new Date() } });
+  ok(res, { changed: true });
+});
+
 // ---------------- Phone jodna (login ke baad) ----------------
 // Body: {"phone"}
 // POST /api/auth/phone/send-otp
@@ -225,13 +270,14 @@ const refreshToken = h(async (req, res) => {
 
 // Profile: user + uski dukaanein
 async function profile(userId) {
-  const user = await User.findById(userId).select('-isActive -googleId -appleId').lean();
-  if (user) user.hasPhone = !!user.phone;
+  const user = await User.findById(userId).select('-isActive -googleId -appleId -passwordHash -failedLogins -lockedUntil').lean();
+  if (user) user.hasPhone = !!(user.phone || user.loginPhone);
   const shops = await Shop.find({ members: { $elemMatch: { userId, isActive: true } }, deletedAt: null }).sort({ createdAt: 1 }).lean();
   const list = [];
   for (const s of shops) {
     const m = s.members.find((x) => x.userId === userId);
-    list.push({ id: s._id, name: s.name, city: s.city, logoUrl: s.logoUrl, defaultLanguage: s.defaultLanguage, role: m.role, plan: (await planOf(s)).code });
+    list.push({ id: s._id, name: s.name, city: s.city, logoUrl: s.logoUrl, defaultLanguage: s.defaultLanguage, role: m.role, plan: (await planOf(s)).code,
+      permissions: permissions.effective(m) }); // app inhi se screens chhupati/dikhati hai
   }
   return { user, supportedLanguages: i18n.SUPPORTED, shops: list };
 }
@@ -269,6 +315,8 @@ module.exports = {
   verifyOtp,
   googleLogin,
   appleLogin,
+  staffLogin,
+  changePassword,
   sendPhoneOtp,
   verifyPhone,
   updateFcmToken,

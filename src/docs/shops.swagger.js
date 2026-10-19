@@ -102,3 +102,28 @@
  *       200: { description: '{success, message, data}' }
  */
 
+/**
+ * @swagger
+ * /api/shops/permissions:
+ *   get:
+ *     tags: [shops]
+ *     summary: Permissions ki list (owner)
+ *     description: "-> {items:[{key,label,description,group,groupLabel,default}]}"
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/shops/team/{memberId}/permissions:
+ *   put:
+ *     tags: [shops]
+ *     summary: Staff ki permissions (owner)
+ *     description: "Body: {'permissions':{'payments':true,'reports':false}}"
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */

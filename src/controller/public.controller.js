@@ -1,13 +1,22 @@
 // Bina login wale routes: bhashayein, plans (pricing), customer tracking page, public catalog.
 
 const i18n = require('../utils/i18n');
-const { Plan, Order, Customer, Shop, Design, Media, GarmentType } = require('../models');
+const { Plan, Order, Customer, Shop, Design, Media, GarmentType, AppConfig } = require('../models');
+const appConfig = require('../utils/app_config');
 const { h, ok, notFound } = require('../utils/http.helpers');
 const { upiUri } = require('./orders.controller');
 const { garmentName } = require('../utils/orders');
 
 const MONTHS = { monthly: 1, quarterly: 3, yearly: 12 };
 const PERIOD_LABEL = { monthly: 'period_monthly', quarterly: 'period_quarterly', yearly: 'period_yearly', lifetime: 'period_lifetime' };
+
+// App khulte hi: force update chahiye? privacy / terms links.
+// Query: ?platform=android|ios&version=1.0.0
+// GET /api/public/app-config
+const getAppConfig = h(async (req, res) => {
+  const doc = await AppConfig.findById('main').lean();
+  ok(res, appConfig.forApp(doc, { platform: String(req.query.platform || 'android'), version: String(req.query.version || ''), lang: req.lang }));
+});
 
 // bhasha chunne wali screen
 // GET /api/public/languages
@@ -89,6 +98,7 @@ const getCatalog = h(async (req, res) => {
 });
 
 module.exports = {
+  getAppConfig,
   getLanguages,
   getPlans,
   trackOrder,

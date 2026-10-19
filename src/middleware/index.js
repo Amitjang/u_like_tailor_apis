@@ -4,6 +4,7 @@ const { parseAccess } = require('../utils/auth');
 const { unauth, forbidden, limit, msgKey, h } = require('../utils/http.helpers');
 const { limitsOf, planOf } = require('../utils/plans');
 const { monthStartIST } = require('../utils/dates');
+const permissions = require('../utils/permissions');
 
 // ======================= BHASHA (LANGUAGE) =======================
 // Har request ki bhasha is kram mein:
@@ -64,8 +65,19 @@ const requireShop = h(async (req, res, next) => {
   req.shop = shop;
   req.shopId = shop._id;
   req.role = member.role;
+  req.member = member;
+  req.perms = permissions.effective(member); // { orders_view: true, payments: false, ... }
   next();
 });
+
+// Staff ke liye maalik ki di hui permission (owner/manager ko hamesha). Koi ek bhi key ho to chalega.
+function requirePerm(...keys) {
+  return (req, res, next) => {
+    if (req.role === 'owner' || req.role === 'manager') return next();
+    if (keys.some((k) => req.perms && req.perms[k])) return next();
+    next(forbidden('permission_denied'));
+  };
+}
 
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -97,4 +109,4 @@ async function checkLimit(shop, key) {
   if (n >= max) throw limit('plan_limit', max, msgKey(LIMITS[key].label));
 }
 
-module.exports = { language, applyUserLang, requireAuth, requireShop, requireRole, requireAdmin, checkLimit, planOf };
+module.exports = { language, applyUserLang, requireAuth, requireShop, requireRole, requirePerm, requireAdmin, checkLimit, planOf };

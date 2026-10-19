@@ -5,6 +5,8 @@ const adminController = require("../controller/admin.controller");
 
 const router = express.Router();
 
+router.get("/app-config", adminController.getAppConfigAdmin);
+router.put("/app-config", adminController.updateAppConfig); // naya version / force update
 router.get("/plans", adminController.getAllPlans);
 router.post("/plans", adminController.createPlan);
 router.patch("/plans/:id", adminController.updatePlan);

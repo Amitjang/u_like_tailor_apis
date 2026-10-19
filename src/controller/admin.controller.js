@@ -3,7 +3,8 @@
 // plans ki keemat/limits, naya plan, kisi dukaan ko haath se plan dena (cash / free),
 // saari dukaanon ki kamaai, aur poore India ke tyohar.
 
-const { Plan, Shop, SubscriptionPayment, Festival } = require('../models');
+const { Plan, Shop, SubscriptionPayment, Festival, AppConfig } = require('../models');
+const { compareVersions } = require('../utils/app_config');
 const { h, ok, created, bad, notFound, pick, paging, queryDate, requireBody, bodyDate } = require('../utils/http.helpers');
 const billing = require('../utils/billing');
 const { clearPlanCache } = require('../utils/plans');
@@ -97,7 +98,44 @@ const createSystemFestival = h(async (req, res) => {
     region: b.region, rushStartsDaysBefore: b.rushStartsDaysBefore, notes: b.notes }));
 });
 
+// ---------- App version / force update ----------
+const VERSION_RX = /^\d+(\.\d+){0,3}$/;
+
+// GET /api/admin/app-config
+const getAppConfigAdmin = h(async (req, res) => ok(res, (await AppConfig.findById('main').lean()) || {}));
+
+// Body: {"android":{"latestVersion":"1.2.0","minVersion":"1.1.0","storeUrl":"https://play..."},
+//        "ios":{...}, "forceUpdate":true, "message":"What's new", "messageHi":"क्या नया है",
+//        "privacyUrl":"https://...", "termsUrl":"https://..."}
+// PUT /api/admin/app-config
+const updateAppConfig = h(async (req, res) => {
+  const b = requireBody(req);
+  const set = {};
+  for (const pl of ['android', 'ios']) {
+    if (!b[pl]) continue;
+    for (const k of ['latestVersion', 'minVersion']) {
+      if (b[pl][k] === undefined) continue;
+      if (!VERSION_RX.test(String(b[pl][k]))) throw bad('version_invalid');
+      set[`${pl}.${k}`] = String(b[pl][k]);
+    }
+    if (b[pl].storeUrl !== undefined) set[`${pl}.storeUrl`] = String(b[pl].storeUrl);
+  }
+  if (b.forceUpdate !== undefined) set.forceUpdate = !!b.forceUpdate;
+  for (const k of ['message', 'messageHi', 'privacyUrl', 'termsUrl']) if (b[k] !== undefined) set[k] = String(b[k]);
+  // Save se pehle jaanch: minVersion, latestVersion se bada na ho
+  const cur = (await AppConfig.findById('main').lean()) || {};
+  for (const pl of ['android', 'ios']) {
+    const min = set[`${pl}.minVersion`] || (cur[pl] && cur[pl].minVersion) || '1.0.0';
+    const latest = set[`${pl}.latestVersion`] || (cur[pl] && cur[pl].latestVersion) || '1.0.0';
+    if (compareVersions(min, latest) > 0) throw bad('min_version_above_latest');
+  }
+  const doc = await AppConfig.findOneAndUpdate({ _id: 'main' }, { $set: set }, { upsert: true, new: true, setDefaultsOnInsert: true }).lean();
+  ok(res, doc);
+});
+
 module.exports = {
+  getAppConfigAdmin,
+  updateAppConfig,
   getAllPlans,
   createPlan,
   updatePlan,

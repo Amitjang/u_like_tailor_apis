@@ -111,7 +111,7 @@ const getDashboard = h(async (req, res) => {
     nextFestival: nextFestival ? { id: nextFestival._id, name: i18n.pick(req.lang, nextFestival.name, nextFestival.nameHi), date: nextFestival.date, daysLeft: daysBetween(today, nextFestival.date) } : null,
     money: null,
   };
-  if (req.role !== 'staff') {
+  if (req.perms.dashboard_money) { // staff ko paise sirf maalik ki permission se
     const dayStart = istDateTime(today);
     const monthStart = istDateTime(today.slice(0, 8) + '01');
     const [todayPay, monthPay, todayExp, dues] = await Promise.all([

@@ -27,4 +27,5 @@ module.exports = {
   ...require('./worker.model'),
   ...require('./fabric.model'),
   ...require('./sync.model'),
+  ...require('./app_config.model'),
 };

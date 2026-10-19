@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.post("/google", authController.googleLogin);
 router.post("/apple", authController.appleLogin);
+router.post("/staff-login", authController.staffLogin); // maalik ka banaya mobile + password
+router.post("/change-password", requireAuth, authController.changePassword);
 router.post("/phone/send-otp", requireAuth, authController.sendPhoneOtp);
 router.post("/phone/verify", requireAuth, authController.verifyPhone);
 router.post("/fcm-token", requireAuth, authController.updateFcmToken);

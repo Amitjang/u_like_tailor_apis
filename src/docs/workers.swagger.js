@@ -17,7 +17,7 @@
  *   post:
  *     tags: [workers]
  *     summary: Create Worker (owner/manager)
- *     description: "Body: {'name':'Salim','phone':'98..','role':'karigar','payType':'piece_rate'}"
+ *     description: "Body: {'name':'Salim','phone':'98..','role':'karigar','payType':'piece_rate'}. role: manager|master|cutter|karigar|embroidery|helper|other. role 'other' ho to 'customRole':'Press wala' (zaroori, max 40)"
  *     requestBody:
  *       content:
  *         application/json:
@@ -233,3 +233,54 @@
  *       200: { description: '{success, message, data}' }
  */
 
+/**
+ * @swagger
+ * /api/workers/{id}/access:
+ *   get:
+ *     tags: [workers]
+ *     summary: Staff login dekho (owner)
+ *     description: "-> {hasAccess, suggestedPhone, loginPhone, isActive, memberId, permissions}"
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/workers/{id}/access:
+ *   put:
+ *     tags: [workers]
+ *     summary: Staff login banao / badlo (owner)
+ *     description: "Body: {'phone','password'(naya ya reset),'permissions'?}"
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/workers/{id}/access:
+ *   patch:
+ *     tags: [workers]
+ *     summary: Staff login band / chalu (owner)
+ *     description: "Body: {'isActive':false}"
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/workers/{id}/access:
+ *   delete:
+ *     tags: [workers]
+ *     summary: Staff login hatao (owner)
+ *     description: "Karigar record rehta hai"
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */

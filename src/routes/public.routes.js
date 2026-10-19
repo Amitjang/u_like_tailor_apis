@@ -5,6 +5,7 @@ const publicController = require("../controller/public.controller");
 
 const router = express.Router();
 
+router.get("/app-config", publicController.getAppConfig); // force update + privacy/terms
 router.get("/languages", publicController.getLanguages);
 router.get("/plans", publicController.getPlans);
 router.get("/track/:token", publicController.trackOrder);

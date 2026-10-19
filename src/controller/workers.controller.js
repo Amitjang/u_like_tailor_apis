@@ -9,7 +9,7 @@ const { normalizePhones } = require('./shop.controller');
 const { crud } = require('../utils/route.helpers');
 const { garmentName } = require('../utils/orders');
 
-const STAFF_FIELDS = ['userId', 'name', 'phone', 'role', 'payType', 'monthlySalaryPaise', 'dailyWagePaise', 'skills', 'joinedOn', 'leftOn', 'isActive', 'photoUrl', 'notes'];
+const STAFF_FIELDS = ['userId', 'name', 'phone', 'role', 'payType', 'monthlySalaryPaise', 'dailyWagePaise', 'skills', 'joinedOn', 'leftOn', 'isActive', 'photoUrl', 'notes', 'customRole'];
 const staffCrud = crud(Staff, STAFF_FIELDS, 'staff_not_found');
 
 async function mustStaff(shopId, id) {
@@ -39,25 +39,53 @@ const EMPTY = { unpaidPieces: 0, unpaidEarningsPaise: 0, pendingAdvancePaise: 0,
 const getWorkers = h(async (req, res) => {
   const f = { shopId: req.shopId, deletedAt: null };
   if (req.query.active === 'true') f.isActive = true;
+  // Staff: "orders_edit" ho to kaam dene ke liye list (bina paise), warna sirf apna record
+  if (!req.perms.workers && !req.perms.orders_edit) f.userId = req.user._id;
   const list = await Staff.find(f).sort({ isActive: -1, name: 1 }).lean();
   const [earn, pending] = await Promise.all([
     earnings(req.shopId),
     WorkAssignment.aggregate([{ $match: { shopId: req.shopId, deletedAt: null, status: { $in: ['assigned', 'in_progress', 'rework'] } } }, { $group: { _id: '$staffId', n: { $sum: 1 } } }]),
   ]);
   const pend = new Map(pending.map((p) => [p._id, p.n]));
+  if (!req.perms.workers) {
+    return ok(res, list.map((s) => ({ _id: s._id, name: s.name, role: s.role, customRole: s.customRole || '', skills: s.skills, isActive: s.isActive,
+      photoUrl: s.photoUrl, userId: s.userId, pendingWork: pend.get(s._id) || 0 })));
+  }
   ok(res, list.map((s) => ({ ...s, pendingWork: pend.get(s._id) || 0, payablePaise: (earn.get(s._id) || EMPTY).payablePaise })));
 });
 
+// role "other" -> customRole zaroori (jo likha wahi kaam); baaki role -> customRole khaali.
+// isUpdate: role na bheja ho to purana role dekhkar tay karo.
+async function cleanRole(req, isUpdate) {
+  const b = requireBody(req);
+  if (b.customRole !== undefined && b.customRole !== null) b.customRole = String(b.customRole).trim();
+  let role = b.role;
+  if (role === undefined && isUpdate && b.customRole !== undefined) {
+    const cur = await Staff.findOne({ _id: req.params.id, shopId: req.shopId, deletedAt: null }).select('role').lean();
+    role = cur && cur.role;
+  }
+  if (role === undefined) return;
+  if (role === 'other') {
+    if (!b.customRole) throw bad('custom_role_required');
+    if (b.customRole.length > 40) throw bad('custom_role_too_long');
+  } else {
+    b.customRole = '';
+  }
+}
+
 // Body: {"name":"Salim","phone":"98..","role":"karigar","payType":"piece_rate"}
+//       role "other" ho to: {"role":"other","customRole":"Press wala"}
 // POST /api/workers
 const createWorker = h(async (req, res) => {
   normalizePhones(requireBody(req), ['phone']);
+  await cleanRole(req, false);
   await checkLimit(req.shop, 'maxStaff');
   await staffCrud.create(req, res);
 });
 // PATCH /api/workers/:id
 const updateWorker = h(async (req, res) => {
   normalizePhones(requireBody(req), ['phone']);
+  await cleanRole(req, true);
   await staffCrud.update(req, res);
 });
 // DELETE /api/workers/:id
@@ -125,7 +153,7 @@ const assignWork = h(async (req, res) => {
 const updateAssignment = h(async (req, res) => {
   const b = requireBody(req);
   const f = { _id: req.params.id, shopId: req.shopId, deletedAt: null, payoutId: null };
-  if (req.role === 'staff') { // staff sirf apna kaam badle
+  if (!req.perms.workers) { // staff sirf apna kaam badle
     f.staffId = { $in: (await Staff.find({ shopId: req.shopId, userId: req.user._id }).select('_id').lean()).map((s) => s._id) };
   }
   const w = await WorkAssignment.findOne(f);
@@ -144,7 +172,7 @@ const updateAssignment = h(async (req, res) => {
 // GET /api/workers/:id/work
 const getWork = h(async (req, res) => {
   const s = await mustStaff(req.shopId, req.params.id);
-  if (req.role === 'staff' && s.userId !== req.user._id) throw forbidden('own_work_only');
+  if (!req.perms.workers && s.userId !== req.user._id) throw forbidden('own_work_only');
   const { limit, offset } = paging(req);
   const f = { shopId: req.shopId, staffId: s._id, deletedAt: null };
   if (req.query.status) f.status = { $in: String(req.query.status).split(',') };
@@ -231,11 +259,11 @@ const setPieceRate = h(async (req, res) => {
 async function attendanceView(req, date) {
   const d = date || todayIST();
   const [staff, att] = await Promise.all([
-    Staff.find({ shopId: req.shopId, deletedAt: null, isActive: true }).sort({ name: 1 }).select('name role').lean(),
+    Staff.find({ shopId: req.shopId, deletedAt: null, isActive: true }).sort({ name: 1 }).select('name role customRole').lean(),
     Attendance.find({ shopId: req.shopId, date: d, deletedAt: null }).lean(),
   ]);
   const byStaff = new Map(att.map((a) => [a.staffId, a]));
-  return staff.map((s) => ({ staffId: s._id, name: s.name, role: s.role, date: d, status: (byStaff.get(s._id) || {}).status || null, note: (byStaff.get(s._id) || {}).note || null }));
+  return staff.map((s) => ({ staffId: s._id, name: s.name, role: s.role, customRole: s.customRole || '', date: d, status: (byStaff.get(s._id) || {}).status || null, note: (byStaff.get(s._id) || {}).note || null }));
 }
 
 // GET /api/workers/attendance

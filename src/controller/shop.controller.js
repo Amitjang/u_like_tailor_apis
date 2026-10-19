@@ -8,6 +8,7 @@ const { planOf, limitsOf } = require('../utils/plans');
 const { monthStartIST } = require('../utils/dates');
 const i18n = require('../utils/i18n');
 const { profile } = require('./auth.controller');
+const permissions = require('../utils/permissions');
 
 // defaultLanguage: "hi" / "en" — naye customers ko WhatsApp isi bhasha mein
 const SHOP_FIELDS = ['name', 'phone', 'whatsappPhone', 'address', 'city', 'state', 'pincode', 'logoUrl', 'upiId',
@@ -100,9 +101,11 @@ const getTeam = h(async (req, res) => {
   ok(res, req.shop.members.map((m) => {
     const u = byId.get(m.userId) || {};
     return { id: m._id, role: m.role, isActive: m.isActive, permissions: m.permissions, createdAt: m.createdAt,
-      userId: m.userId, name: u.name, phone: u.phone, email: u.email, preferredLanguage: u.preferredLanguage, lastLoginAt: u.lastLoginAt,
+      userId: m.userId, name: u.name, phone: u.phone || u.loginPhone, email: u.email, preferredLanguage: u.preferredLanguage, lastLoginAt: u.lastLoginAt,
+      loginType: u.authType || 'social', // 'password' = maalik ka banaya staff login
+      effectivePermissions: permissions.effective(m),
       // false = staff ne abhi tak app mein login karke yahi number nahi joda
-      joined: !!(u.googleId || u.appleId || u.lastLoginAt) };
+      joined: !!(u.googleId || u.appleId || u.lastLoginAt || u.authType === 'password') };
   }));
 });
 

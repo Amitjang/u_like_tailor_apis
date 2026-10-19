@@ -2,12 +2,17 @@
 const { schema } = require('../utils/schema.helpers');
 const { model, TASKS, PAY_MODES, dateStr, ref } = require('./model.helpers');
 
-const Staff = model('Staff', schema({
+// Kaarigar ke kaam (app mein chips). "other" chuno to customRole mein kuch bhi likh sakte hain.
+const STAFF_ROLES = ['manager', 'master', 'cutter', 'karigar', 'embroidery', 'helper', 'other'];
+
+const staffSchema = schema({
   shopId: { type: String, required: true, index: true },
   userId: ref, // agar karigar khud app chalata hai
   name: { type: String, required: true },
   phone: String,
-  role: { type: String, enum: ['master', 'cutter', 'karigar', 'embroidery', 'helper', 'other'], required: true },
+  role: { type: String, enum: STAFF_ROLES, required: true },
+  // role "other" par maalik ka likha kaam (jaise "Press wala") — baaki role par khaali
+  customRole: { type: String, trim: true, maxlength: 40 },
   payType: { type: String, enum: ['piece_rate', 'monthly', 'daily', 'mixed'], default: 'piece_rate' },
   monthlySalaryPaise: { type: Number, default: 0 },
   dailyWagePaise: { type: Number, default: 0 },
@@ -19,7 +24,12 @@ const Staff = model('Staff', schema({
   notes: String,
   // Festival planner: ek din mein kitne piece bana sakta hai
   capacity: [{ _id: false, garmentTypeId: String, piecesPerDay: { type: Number, min: 0 } }],
-}), 'staff');
+});
+// "other" ke alawa customRole ka matlab nahi — hata do
+staffSchema.pre('validate', function () {
+  if (this.role !== 'other') this.customRole = undefined;
+});
+const Staff = model('Staff', staffSchema, 'staff');
 
 // staffId null = dukaan ka default rate
 
@@ -88,4 +98,4 @@ const Attendance = model('Attendance', schema({
   note: String,
 }).index({ staffId: 1, date: 1 }, { unique: true }).index({ shopId: 1, date: 1 }), 'attendance');
 
-module.exports = { Staff, PieceRate, WorkAssignment, StaffAdvance, StaffPayout, Attendance };
+module.exports = { STAFF_ROLES, Staff, PieceRate, WorkAssignment, StaffAdvance, StaffPayout, Attendance };

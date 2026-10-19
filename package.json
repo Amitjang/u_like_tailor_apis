@@ -21,7 +21,8 @@
     "seed": "node src/utils/seed.js",
     "test": "node --test \"tests/unit/*.test.js\"",
     "e2e": "node tests/e2e.js",
-    "e2e:social": "node tests/social.e2e.js"
+    "e2e:social": "node tests/social.e2e.js",
+    "e2e:staff": "node tests/staff.e2e.js"
   },
   "dependencies": {
     "cloudinary": "^1.41.3",

@@ -165,3 +165,33 @@
  *       200: { description: '{success, message, data}' }
  */
 
+/**
+ * @swagger
+ * /api/auth/staff-login:
+ *   post:
+ *     tags: [auth]
+ *     summary: Staff login (mobile + password)
+ *     description: "Body: {'phone','password','deviceId','fcmToken'} -> {tokens, me}. 5 galat = 15 min lock"
+ *     security: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     tags: [auth]
+ *     summary: Staff apna password badle
+ *     description: "Body: {'oldPassword','newPassword'}"
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */
