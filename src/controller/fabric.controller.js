@@ -6,6 +6,7 @@ const { h, ok, created, bad, notFound, paging, requireBody, escapeRegex } = requ
 const { requireRole } = require('../middleware');
 const { refreshFabricStock } = require('../utils/orders');
 const { crud } = require('../utils/route.helpers');
+const cloudMedia = require('../utils/cloud_media');
 
 const FABRIC_FIELDS = ['name', 'fabricType', 'color', 'quality', 'supplierName', 'supplierPhone', 'unit', 'lowStockThreshold', 'costPerUnitPaise', 'sellPerUnitPaise', 'photoUrl', 'notes'];
 const fabricCrud = crud(Fabric, FABRIC_FIELDS, 'fabric_not_found');
@@ -99,8 +100,8 @@ const updateDesign = h(designCrud.update);
 const deleteDesign = h(designCrud.remove);
 
 // ---------- Photos ----------
-// Photo pehle storage (S3 / Cloudflare R2 / Firebase) par upload karein, phir URL yahan register karein.
-const mediaCrud = crud(Media, ['entityType', 'entityId', 'kind', 'url', 'thumbnailUrl', 'mimeType', 'sizeBytes', 'caption']);
+// Photo pehle POST /api/media/upload (Cloudinary) par bhejein, phir mila URL yahan register karein.
+const mediaCrud = crud(Media, ['entityType', 'entityId', 'kind', 'url', 'thumbnailUrl', 'publicId', 'mimeType', 'sizeBytes', 'caption']);
 
 // Query: ?entityType=order&entityId=...
 // GET /api/media
@@ -110,8 +111,42 @@ const getMedia = h(async (req, res) => {
 });
 // POST /api/media
 const createMedia = h((req, res) => mediaCrud.create(req, res, { uploadedBy: req.user._id }));
-// DELETE /api/media/:id
-const deleteMedia = h(mediaCrud.remove);
+// DELETE /api/media/:id  — Cloudinary se bhi hata do (jagah khaali)
+const deleteMedia = h(async (req, res) => {
+  const m = await Media.findOne({ _id: req.params.id, shopId: req.shopId, deletedAt: null }).select('url publicId').lean();
+  await mediaCrud.remove(req, res);
+  if (m) cloudMedia.destroy(m.publicId || m.url);
+});
+
+// Purane DELIVERED orders ki photos hatao (sirf owner). Body: {"months":6,"dryRun":true}
+//   dryRun = sirf ginti batao (kitni photos, kitni jagah), kuch mat hatao.
+// POST /api/media/cleanup
+const cleanupOldPhotos = h(async (req, res) => {
+  const b = requireBody(req);
+  const months = Number(b.months);
+  if (!Number.isInteger(months) || months < 1 || months > 36) throw bad('cleanup_months_invalid');
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  const orders = await Order.find({
+    shopId: req.shopId, deletedAt: null, status: 'delivered',
+    $or: [{ deliveredAt: { $lt: cutoff } }, { deliveredAt: null, updatedAt: { $lt: cutoff } }],
+  }).select('_id items._id').lean();
+  const orderIds = orders.map((o) => o._id);
+  const itemIds = orders.flatMap((o) => (o.items || []).map((i) => i._id));
+  const media = orders.length ? await Media.find({
+    shopId: req.shopId, deletedAt: null,
+    $or: [{ entityType: 'order', entityId: { $in: orderIds } }, { entityType: 'order_item', entityId: { $in: itemIds } }],
+  }).select('url publicId sizeBytes').lean() : [];
+  const bytes = media.reduce((s, m) => s + (m.sizeBytes || 0), 0);
+  const result = { months, orders: orders.length, photos: media.length, bytes, deleted: 0 };
+  if (b.dryRun || !media.length) return ok(res, result);
+  await Media.updateMany({ _id: { $in: media.map((m) => m._id) } }, { $set: { deletedAt: new Date() } });
+  // Cloudinary se ek-ek karke (thode-thode) hatao
+  for (let i = 0; i < media.length; i += 10) {
+    await Promise.all(media.slice(i, i + 10).map((m) => cloudMedia.destroy(m.publicId || m.url)));
+  }
+  ok(res, { ...result, deleted: media.length });
+});
 
 module.exports = {
   getFabrics,
@@ -127,4 +162,5 @@ module.exports = {
   getMedia,
   createMedia,
   deleteMedia,
+  cleanupOldPhotos,
 };

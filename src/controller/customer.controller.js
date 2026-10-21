@@ -3,6 +3,7 @@
 const i18n = require('../utils/i18n');
 const { Customer, Measurement, Order, GarmentType } = require('../models');
 const { h, ok, created, bad, notFound, conflict, pick, paging, requireBody, escapeRegex } = require('../utils/http.helpers');
+const cloudMedia = require('../utils/cloud_media');
 const { requireRole, checkLimit } = require('../middleware');
 const { normalizePhone } = require('../utils/phone');
 const { normalizePhones } = require('./shop.controller');
@@ -113,8 +114,10 @@ const getCustomerById = h(async (req, res) => ok(res, await customerDetail(req.s
 const updateCustomer = h(async (req, res) => {
   const set = normalizePhones(pick(requireBody(req), CUSTOMER_FIELDS), PHONES);
   if (!Object.keys(set).length) throw bad('no_fields', CUSTOMER_FIELDS.join(', '));
+  const old = cloudMedia.touchesPhoto(set) ? await Customer.findOne({ _id: req.params.id, shopId: req.shopId }).select('photoUrl').lean() : null;
   const c = await Customer.findOneAndUpdate({ _id: req.params.id, shopId: req.shopId, deletedAt: null }, { $set: set }, { new: true, runValidators: true }).lean();
   if (!c) throw notFound('customer_not_found');
+  cloudMedia.dropReplacedPhotos(old, set);
   if (set.name || set.phone) { // orders mein rakhi copy bhi badlo
     await Order.updateMany({ shopId: req.shopId, customerId: c._id }, { $set: { customerName: c.name, customerPhone: c.phone } });
   }

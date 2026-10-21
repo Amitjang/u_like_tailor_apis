@@ -223,6 +223,25 @@ async function main() {
     assert.equal(rc, 400);
     ok('manager role, "other" + likha kaam save/badla, role badalne par customRole hata, galat role mana'); }
 
+    { let rc, rj;
+    console.log('PURANE ORDER KI PHOTOS HATAO');
+    const old = new Date(Date.now() - 200 * 864e5);
+    await M.Order.collection.insertMany([
+      { _id: 'ord_old_1', trackingToken: 'tt_old_1', shopId: SHOP, status: 'delivered', deliveredAt: old, items: [{ _id: 'itm_old_1' }], deletedAt: null },
+      { _id: 'ord_new_1', trackingToken: 'tt_new_1', shopId: SHOP, status: 'delivered', deliveredAt: new Date(), items: [{ _id: 'itm_new_1' }], deletedAt: null },
+      { _id: 'ord_open_1', trackingToken: 'tt_open_1', shopId: SHOP, status: 'stitching', items: [], deletedAt: null, updatedAt: old },
+    ]);
+    const mk = (entityType, entityId) => ({ shopId: SHOP, entityType, entityId, kind: 'design_reference', url: 'https://example.com/' + entityId + '.jpg', sizeBytes: 1000 });
+    await M.Media.create([mk('order', 'ord_old_1'), mk('order_item', 'itm_old_1'), mk('order', 'ord_new_1'), mk('order', 'ord_open_1')]);
+    [rc, rj] = await req('POST', '/media/cleanup', { months: 0 }, { tok: OWNER, shop: SHOP });
+    assert.equal(rc, 400);
+    [rc, rj] = await req('POST', '/media/cleanup', { months: 6, dryRun: true }, { tok: OWNER, shop: SHOP, expect: 200 });
+    assert.equal(rj.photos, 2); assert.equal(rj.orders, 1); assert.equal(rj.bytes, 2000); assert.equal(rj.deleted, 0);
+    assert.equal(await M.Media.countDocuments({ shopId: SHOP, deletedAt: null }), 4);
+    [rc, rj] = await req('POST', '/media/cleanup', { months: 6 }, { tok: OWNER, shop: SHOP, expect: 200 });
+    assert.equal(rj.deleted, 2);
+    assert.equal(await M.Media.countDocuments({ shopId: SHOP, deletedAt: null }), 2); // naya + chalu order bache
+    ok('6 mahine purane delivered order ki photos hatin; naye / chalu order ki photos bachin; dryRun sirf ginti'); }
     console.log('\nALL PASSED ✅');
   } finally {
     server.kill();

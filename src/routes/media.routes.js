@@ -5,6 +5,8 @@ const fabricController = require("../controller/fabric.controller");
 const uploadController = require("../controller/upload.controller");
 const upload = require("../config/mutler");
 
+const { requireRole } = require("../middleware");
+
 const router = express.Router();
 
 router.get("/designs", fabricController.getDesigns);
@@ -13,6 +15,7 @@ router.patch("/designs/:id", fabricController.updateDesign);
 router.delete("/designs/:id", fabricController.deleteDesign);
 // Photo upload (Cloudinary): form-data "image" -> {url}
 router.post("/upload", uploadController.requireUploadConfig, upload.single("image"), uploadController.uploadErrors, uploadController.uploadPhoto);
+router.post("/cleanup", requireRole("owner"), fabricController.cleanupOldPhotos);
 router.get("/", fabricController.getMedia);
 router.post("/", fabricController.createMedia);
 router.delete("/:id", fabricController.deleteMedia);

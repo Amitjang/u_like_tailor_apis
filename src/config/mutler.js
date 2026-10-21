@@ -17,8 +17,9 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     return {
-      folder: "uploads", // 📁 folder in Cloudinary
-      allowed_formats: ["jpg", "jpeg", "png"],
+      // Har dukaan ka alag folder (baad mein purani photos hataane mein aasani)
+      folder: `uliketailor/${req.shopId || "misc"}`,
+      allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"],
       public_id: `${file.fieldname}-${Date.now()}-${Math.round(
         Math.random() * 1e9
       )}`,

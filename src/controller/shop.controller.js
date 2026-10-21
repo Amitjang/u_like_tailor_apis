@@ -3,6 +3,7 @@
 const { Shop, User, Plan, Customer, Order, Staff } = require('../models');
 const { h, ok, created, bad, notFound, limit, pick, requireBody } = require('../utils/http.helpers');
 const { normalizePhone } = require('../utils/phone');
+const cloudMedia = require('../utils/cloud_media');
 const { requireRole } = require('../middleware');
 const { planOf, limitsOf } = require('../utils/plans');
 const { monthStartIST } = require('../utils/dates');
@@ -67,6 +68,7 @@ const updateShop = h(async (req, res) => {
   const set = normalizePhones(pick(requireBody(req), SHOP_FIELDS), ['phone', 'whatsappPhone']);
   if (!Object.keys(set).length) throw bad('no_fields', SHOP_FIELDS.join(', '));
   const shop = await Shop.findByIdAndUpdate(req.shopId, { $set: set }, { new: true, runValidators: true }).lean();
+  cloudMedia.dropReplacedPhotos(req.shop, set); // purana logo Cloudinary se hatao
   ok(res, shop);
 });
 

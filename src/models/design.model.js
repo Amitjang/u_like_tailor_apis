@@ -20,6 +20,7 @@ const Media = model('Media', schema({
   kind: { type: String, enum: ['design_reference', 'fabric_photo', 'finished_product', 'customer_photo', 'bill', 'other'], required: true },
   url: { type: String, required: true }, // S3 / R2 / Firebase par upload ke baad URL
   thumbnailUrl: String,
+  publicId: String, // Cloudinary — photo hatate waqt
   mimeType: String,
   sizeBytes: Number,
   caption: String,

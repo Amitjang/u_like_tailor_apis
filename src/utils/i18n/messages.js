@@ -156,6 +156,7 @@ module.exports = {
   // ---------- Staff ----------
   custom_role_required: ["Write the work / role for \"Other\"", "\"अन्य\" के लिए काम / भूमिका लिखें"],
   custom_role_too_long: ["Work / role name: max 40 letters", "काम / भूमिका का नाम: ज़्यादा से ज़्यादा 40 अक्षर"],
+  cleanup_months_invalid: ["Choose 1 to 36 months", "1 से 36 महीने चुनें"],
   staff_not_found: ["Staff member not found", "कारीगर नहीं मिला"],
   item_not_assignable: ["Item not found or already delivered/cancelled", "आइटम नहीं मिला या डिलीवर/रद्द हो चुका है"],
   work_locked: ["Work not found or already paid (cannot be changed)", "काम नहीं मिला या उसका भुगतान हो चुका है (बदला नहीं जा सकता)"],

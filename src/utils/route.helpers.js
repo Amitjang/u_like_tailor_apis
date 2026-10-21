@@ -1,6 +1,7 @@
 // Routes ke chhote common helpers.
 const i18n = require('./i18n');
 const { ok, created, notFound, bad, pick, requireBody } = require('./http.helpers');
+const cloudMedia = require('./cloud_media');
 
 // WhatsApp result ki "reason" darzi ki bhasha mein (text khud customer ki bhasha mein hota hai)
 function localize(req, msg) {
@@ -18,8 +19,11 @@ function crud(Model, fields, notFoundKey = 'not_found') {
     async update(req, res) {
       const set = pick(requireBody(req), fields);
       if (!Object.keys(set).length) throw bad('no_fields', fields.join(', '));
-      const doc = await Model.findOneAndUpdate({ _id: req.params.id, shopId: req.shopId, deletedAt: null }, { $set: set }, { new: true, runValidators: true }).lean();
+      const where = { _id: req.params.id, shopId: req.shopId, deletedAt: null };
+      const old = cloudMedia.touchesPhoto(set) ? await Model.findOne(where).select(cloudMedia.PHOTO_KEYS.join(' ')).lean() : null;
+      const doc = await Model.findOneAndUpdate(where, { $set: set }, { new: true, runValidators: true }).lean();
       if (!doc) throw notFound(notFoundKey);
+      cloudMedia.dropReplacedPhotos(old, set); // purani photo Cloudinary se hatao
       ok(res, doc);
     },
     async remove(req, res) {
