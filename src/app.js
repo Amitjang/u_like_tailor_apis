@@ -55,6 +55,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLog);
 app.use(language); // har request ki bhasha: ?lang / X-Language / user ki / phone ki / Hindi
 
+// Privacy / Terms / Delete account / Contact pages (app aur Play Store ke link)
+app.use(require("./routes/legal.routes"));
+
 // Root URL — browser mein kholne par "not found" na dikhe
 app.get("/", (_req, res) => {
   res.json({

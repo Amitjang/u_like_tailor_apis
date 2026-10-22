@@ -14,9 +14,12 @@ function compareVersions(a, b) {
 
 function defaults() {
   const e = process.env;
+  // PRIVACY_URL / TERMS_URL na ho to apne server ke pages (/privacy, /terms)
+  const base = String(e.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+  const own = base && !/localhost|127\.0\.0\.1/.test(base) ? base : '';
   return {
-    privacyUrl: e.PRIVACY_URL || '',
-    termsUrl: e.TERMS_URL || '',
+    privacyUrl: e.PRIVACY_URL || (own ? `${own}/privacy` : ''),
+    termsUrl: e.TERMS_URL || (own ? `${own}/terms` : ''),
     android: { storeUrl: e.ANDROID_STORE_URL || 'https://play.google.com/store/apps/details?id=com.uLikeTailor.u_like_tailor' },
     ios: { storeUrl: e.IOS_STORE_URL || '' },
   };
