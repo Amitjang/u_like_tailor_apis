@@ -74,9 +74,19 @@ const getCustomers = h(async (req, res) => {
   const sort = req.query.sort === 'recent' ? { updatedAt: -1 } : { name: 1 };
   const list = await Customer.find(filter).collation({ locale: 'en', strength: 2 }).sort(sort).skip(offset).limit(limit)
     .select('name phone area tags photoUrl preferredLanguage updatedAt members').lean();
-  const dues = await duesByCustomer(req.shopId, list.map((c) => c._id));
+  const ids = list.map((c) => c._id);
+  const [dues, counts] = await Promise.all([
+    duesByCustomer(req.shopId, ids),
+    // kitne order (cancelled chhod kar) — 0 ho to app "Paid" nahi dikhati
+    Order.aggregate([
+      { $match: { shopId: req.shopId, deletedAt: null, status: { $ne: 'cancelled' }, customerId: { $in: ids } } },
+      { $group: { _id: '$customerId', n: { $sum: 1 } } },
+    ]),
+  ]);
+  const orderCount = new Map(counts.map((x) => [x._id, x.n]));
   const items = list.map(({ members, ...c }) => ({
     ...c, duePaise: dues.has(c._id) ? dues.get(c._id).totalDuePaise : 0,
+    ordersCount: orderCount.get(c._id) || 0,
     membersCount: (members || []).filter((m) => !m.deletedAt).length,
   }));
   ok(res, { items, limit, offset });
