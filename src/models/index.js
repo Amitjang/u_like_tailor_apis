@@ -28,4 +28,7 @@ module.exports = {
   ...require('./fabric.model'),
   ...require('./sync.model'),
   ...require('./app_config.model'),
+  ...require('./admin_log.model'),
+  ...require('./admin.model'),
+  ...require('./booking.model'),
 };

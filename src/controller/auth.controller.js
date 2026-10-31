@@ -325,4 +325,5 @@ module.exports = {
   getProfile,
   updateProfile,
   profile,
+  newSession,
 };

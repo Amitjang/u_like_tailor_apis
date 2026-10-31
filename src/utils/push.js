@@ -120,10 +120,31 @@ async function pushNotification(n) {
   return { sent, devices: tokens.length };
 }
 
+// Customer app ke user ki notification (UserNotification) -> uske saare phones
+async function pushUser(n) {
+  if (!isConfigured() || !n || !n.userId) return { sent: 0 };
+  const { Session } = require('../models');
+  const sessions = await Session.find({ userId: n.userId, revokedAt: null, expiresAt: { $gt: new Date() }, fcmToken: { $nin: [null, ''] } })
+    .select('fcmToken').lean();
+  const tokens = [...new Set(sessions.map((s) => s.fcmToken))];
+  const msg = { title: n.title, body: n.body, type: n.type, data: { ...(n.data || {}), notificationId: n._id, audience: 'customer' } };
+  let sent = 0;
+  for (const t of tokens) {
+    try {
+      const r = await sendOne(t, msg);
+      if (r === 'sent') sent++;
+      else await Session.updateMany({ fcmToken: t }, { $unset: { fcmToken: 1 } });
+    } catch (e) {
+      log('ERROR', 'push user failed', { err: e.message, type: n.type });
+    }
+  }
+  return { sent, devices: tokens.length };
+}
+
 // Test ke liye: config dobara padho
 function _reset() {
   CFG = null;
   tokenCache = { token: null, exp: 0 };
 }
 
-module.exports = { pushNotification, isConfigured, buildMessage, CHANNEL_TODAY, CHANNEL_DEFAULT, TODAY_TYPES, _reset };
+module.exports = { pushNotification, pushUser, isConfigured, buildMessage, CHANNEL_TODAY, CHANNEL_DEFAULT, TODAY_TYPES, _reset };

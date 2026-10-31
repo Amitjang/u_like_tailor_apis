@@ -4,8 +4,10 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const { normalizePhone } = require('../utils/phone');
 
+// Render / .env mein copy-paste se aage-peeche space ya new line aa jaati hai (keys fail ho jaati hain) — hata do
 function get(key, def) {
-  const v = process.env[key];
+  const raw = process.env[key];
+  const v = typeof raw === 'string' ? raw.trim() : raw;
   return v === undefined || v === '' ? def : v;
 }
 

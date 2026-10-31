@@ -9,7 +9,7 @@ const i18n = require("./utils/i18n");
 const { fromConfig } = require("./utils/whatsapp");
 const { razorpay } = require("./utils/razorpay");
 const { toApiError, sendError } = require("./utils/http.helpers");
-const { language, requireAuth, requireShop, requireAdmin } = require("./middleware");
+const { language, requireAuth, requireShop, requireAdmin, requirePerm } = require("./middleware");
 
 const authRoutes = require("./routes/auth.routes");
 const shopRoutes = require("./routes/shops.routes");
@@ -30,6 +30,8 @@ const syncRoutes = require("./routes/sync.routes");
 const adminRoutes = require("./routes/admin.routes");
 const publicRoutes = require("./routes/public.routes");
 const webhookRoutes = require("./routes/webhooks.routes");
+const onlineRoutes = require("./routes/online.routes");
+const marketRoutes = require("./routes/market.routes");
 
 // Settings (.env) — galat ho to server start hi nahi hota (saaf message ke saath)
 const cfg = config.load();
@@ -80,6 +82,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/public", publicRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/auth", authRoutes); // /otp/* aur /refresh bina login, baaki route par login
+app.use("/api/market", marketRoutes); // customer app: dukaanein bina login, booking login ke saath
 
 // ---------- Login ----------
 app.use("/api/shops", shopRoutes); // dukaan banana / list (dukaan ke andar wale X-Shop-Id ke saath)
@@ -101,6 +104,7 @@ app.use("/api/messages", inShop, messageRoutes);
 app.use("/api/notifications", inShop, notificationRoutes);
 app.use("/api/billing", inShop, billingRoutes);
 app.use("/api/sync", inShop, syncRoutes);
+app.use("/api/online", inShop, requirePerm("bookings"), onlineRoutes); // online dukaan + bookings
 
 if (!cfg.isProd) app.use("/api/testing", require("./routes/testing.routes")); // Cloudinary check (sirf dev)
 

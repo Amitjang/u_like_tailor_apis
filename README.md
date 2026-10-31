@@ -305,8 +305,3 @@ RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e_key_secret RAZORPAY_WEBHOOK
 RAZORPAY_BASE_URL=http://127.0.0.1:8099 npm start
 # doosre terminal mein:
 MONGO_URI=mongodb://127.0.0.1:27017/tailor_e2e API_URL=http://localhost:8080/api npm run e2e
-#   u L i k e T a i l o r B a c k e n d  
- #   u L i k e T a i l o r B a c k e n d  
- #   u _ l i k e _ t a i l o r _ a p i s  
- #   u _ l i k e _ t a i l o r _ a p i s  
- 

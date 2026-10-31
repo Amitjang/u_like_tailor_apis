@@ -374,10 +374,13 @@ function start({ wa, publicBaseUrl, maxAttempts = 3 }) {
   const doSchedule = () => run('schedule', () => withLock('scheduler', 5 * MIN, () => schedule({ publicBaseUrl })));
   const doHourly = () => run('hourly', () => withLock('hourly', 30 * MIN, () => hourly()));
   const doSend = () => run('send', () => sendBatch(wa, { maxAttempts }));
+  // Online booking: jawab na mila -> expire, waitlist offer khatam -> agla, customer ko yaad dilana
+  const doBookings = () => run('bookings', () => withLock('bookings', 5 * MIN, () => require('../utils/bookings').bookingJobs()));
 
   doSchedule();
   doHourly();
-  const timers = [setInterval(doSend, 5000), setInterval(doSchedule, MIN), setInterval(doHourly, HOUR)];
+  doBookings();
+  const timers = [setInterval(doSend, 5000), setInterval(doSchedule, MIN), setInterval(doHourly, HOUR), setInterval(doBookings, MIN)];
   log('INFO', 'worker started', { provider: wa.name });
   return async function stop() {
     stopped = true;

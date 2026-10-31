@@ -69,3 +69,14 @@
  *     responses:
  *       200: { description: '{success, message, data}' }
  */
+
+/**
+ * @swagger
+ * /api/public/marketplace-config:
+ *   get:
+ *     tags: [public]
+ *     summary: Marketplace features for apps
+ *     description: "Which booking / growth features are on, and for which plans"
+ *     responses:
+ *       200: { description: '{success, message, data}' }
+ */

@@ -18,6 +18,12 @@ const getAppConfig = h(async (req, res) => {
   ok(res, appConfig.forApp(doc, { platform: String(req.query.platform || 'android'), version: String(req.query.version || ''), lang: req.lang }));
 });
 
+// Customer / shop app: kaun se marketplace features chalu hain
+// GET /api/public/marketplace-config
+const getMarketplaceConfig = h(async (req, res) => {
+  ok(res, await require('../utils/marketplace').publicConfig());
+});
+
 // bhasha chunne wali screen
 // GET /api/public/languages
 const getLanguages = (req, res) => ok(res, {
@@ -99,6 +105,7 @@ const getCatalog = h(async (req, res) => {
 
 module.exports = {
   getAppConfig,
+  getMarketplaceConfig,
   getLanguages,
   getPlans,
   trackOrder,

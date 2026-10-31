@@ -20,6 +20,13 @@ const User = model('User', schema({
   preferredLanguage: { type: String, enum: LANGS, default: 'hi' },
   isActive: { type: Boolean, default: true },
   lastLoginAt: Date,
+  // Customer app: booking ke liye naam + mobile (dukaan isi par call / WhatsApp karti hai)
+  customerProfile: {
+    name: String,
+    phone: String, // +91XXXXXXXXXX
+    whatsapp: { type: Boolean },
+    city: String,
+  },
 }), 'users', false);
 
 const OtpRequest = model('OtpRequest', schema({

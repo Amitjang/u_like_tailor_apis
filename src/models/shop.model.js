@@ -49,6 +49,15 @@ const Shop = model('Shop', schema({
   },
   automationRules: [AutomationRule],
   orderCounter: { type: Number, default: 0 },
-}).index({ 'members.userId': 1 }).index({ 'subscription.endsAt': 1 }), 'shops');
+  // Admin panel: block (dukaan app nahi chala sakti), verified badge, andar ka note
+  blockedAt: { type: Date, default: null },
+  blockedReason: String,
+  verifiedAt: { type: Date, default: null },
+  adminNote: String,
+  // Online dukaan (customer app): profile, working hours, booking ke niyam, rating — utils/online.js dekhein
+  online: { type: Mixed, default: {} },
+  // Nakshe par jagah (GeoJSON Point [lng, lat]) — paas ki dukaanein dhoondhne ke liye
+  geo: { type: Mixed, default: undefined },
+}).index({ 'members.userId': 1 }).index({ 'subscription.endsAt': 1 }).index({ geo: '2dsphere' }).index({ 'online.enabled': 1 }), 'shops');
 
 module.exports = { Shop };

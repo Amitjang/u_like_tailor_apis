@@ -31,7 +31,7 @@ const Customer = model('Customer', schema({
   notes: String,
   whatsappOptIn: { type: Boolean, default: true },
   preferredLanguage: { type: String, enum: [...LANGS, null], default: null }, // null = dukaan ki bhasha
-  source: { type: String, enum: ['walk_in', 'referral', 'whatsapp', 'instagram', 'catalog_link', 'other', null], default: null },
+  source: { type: String, enum: ['walk_in', 'referral', 'whatsapp', 'instagram', 'catalog_link', 'u_like_tailor_app', 'other', null], default: null },
   referredByCustomerId: ref,
   members: [FamilyMember], // parivar (ek number par poora ghar)
 }).index({ shopId: 1, phone: 1, deletedAt: 1 }, { unique: true })

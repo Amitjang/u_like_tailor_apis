@@ -1,5 +1,5 @@
 const i18n = require('../utils/i18n');
-const { User, Session, Shop, Customer, Order, Staff } = require('../models');
+const { User, Session, Shop, Customer, Order, Staff, AdminUser } = require('../models');
 const { parseAccess } = require('../utils/auth');
 const { unauth, forbidden, limit, msgKey, h } = require('../utils/http.helpers');
 const { limitsOf, planOf } = require('../utils/plans');
@@ -62,6 +62,7 @@ const requireShop = h(async (req, res, next) => {
   const shop = await Shop.findOne({ _id: String(shopId), deletedAt: null }).lean();
   const member = shop && (shop.members || []).find((x) => x.userId === req.user._id && x.isActive);
   if (!member) throw forbidden('not_shop_member');
+  if (shop.blockedAt) throw forbidden('shop_blocked');
   req.shop = shop;
   req.shopId = shop._id;
   req.role = member.role;
@@ -87,12 +88,21 @@ function requireRole(...roles) {
   };
 }
 
-const requireAdmin = (req, res, next) => {
+// Admin: .env ke ADMIN_EMAILS / ADMIN_PHONES (hamesha "owner") ya panel se joda gaya AdminUser.
+// role "support" sirf dekh sakta hai (GET) — badalne wala har request 403.
+const requireAdmin = h(async (req, res, next) => {
   const { adminPhones, adminEmails } = req.app.locals.cfg;
-  if (req.user.phone && adminPhones.includes(req.user.phone)) return next();
-  if (req.user.email && (adminEmails || []).includes(String(req.user.email).toLowerCase())) return next();
-  next(forbidden('admin_only'));
-};
+  const email = req.user.email ? String(req.user.email).toLowerCase() : null;
+  if ((req.user.phone && adminPhones.includes(req.user.phone)) || (email && (adminEmails || []).includes(email))) {
+    req.admin = { email, phone: req.user.phone || null, role: 'owner', source: 'env' };
+    return next();
+  }
+  const a = email && await AdminUser.findOne({ email, isActive: true }).lean();
+  if (!a) throw forbidden('admin_only');
+  req.admin = { email, role: a.role, source: 'panel', id: a._id };
+  if (a.role !== 'owner' && req.method !== 'GET') throw forbidden('admin_readonly');
+  next();
+});
 
 // ======================= PLAN LIMITS =======================
 const LIMITS = {

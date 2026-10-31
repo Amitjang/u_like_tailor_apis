@@ -13,6 +13,7 @@ const CATALOG = [
   ['customers_view', true, 'customers'],
   ['customers_edit', true, 'customers'],
   ['measurements', true, 'customers'],
+  ['bookings', true, 'orders'],
   ['payments', false, 'money'],
   ['dashboard_money', false, 'money'],
   ['expenses', false, 'money'],

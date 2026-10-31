@@ -6,6 +6,7 @@ const publicController = require("../controller/public.controller");
 const router = express.Router();
 
 router.get("/app-config", publicController.getAppConfig); // force update + privacy/terms
+router.get("/marketplace-config", publicController.getMarketplaceConfig); // features on/off, booking rules
 router.get("/languages", publicController.getLanguages);
 router.get("/plans", publicController.getPlans);
 router.get("/track/:token", publicController.trackOrder);
