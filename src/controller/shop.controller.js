@@ -5,7 +5,7 @@ const { h, ok, created, bad, notFound, limit, pick, requireBody } = require('../
 const { normalizePhone } = require('../utils/phone');
 const cloudMedia = require('../utils/cloud_media');
 const { requireRole } = require('../middleware');
-const { planOf, limitsOf } = require('../utils/plans');
+const { planOf, limitsOf, billingEnabled } = require('../utils/plans');
 const { monthStartIST } = require('../utils/dates');
 const i18n = require('../utils/i18n');
 const { profile } = require('./auth.controller');
@@ -86,6 +86,7 @@ async function subscriptionView(shop, lang) {
     subscription: sub,
     plan: { ...plan, displayName: i18n.pick(lang, plan.name, plan.nameHi) },
     isPaidPlan: plan.pricePaise > 0,
+    billingEnabled: billingEnabled(), // false = abhi sab free (launch offer)
     endsAt,
     daysLeft: endsAt ? Math.max(Math.ceil((endsAt - Date.now()) / 86400000), 0) : null,
     expiringSoon: !!endsAt && endsAt - Date.now() < 3 * 86400000,

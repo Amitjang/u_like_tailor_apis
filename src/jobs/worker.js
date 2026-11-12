@@ -84,6 +84,10 @@ async function sendBatch(wa, { maxAttempts = 3, batch = 20 } = {}) {
 // ---------------- 2. Scheduler ----------------
 // Sirf un dukaanon ke liye jinke plan mein automation hai aur rule chalu hai.
 async function automationShops(now) {
+  // Payment band (launch offer): har dukaan ko automation
+  if (!require('../utils/plans').billingEnabled()) {
+    return M.Shop.find({ deletedAt: null, automationRules: { $elemMatch: { isEnabled: true } } }).select('name automationRules').lean();
+  }
   const plans = await loadPlans();
   const ids = [...plans.byId.values()].filter((p) => p.limits && p.limits.whatsappAutomation).map((p) => p._id);
   if (!ids.length) return [];
@@ -192,6 +196,7 @@ async function schedule({ publicBaseUrl, now = new Date() } = {}) {
 
 // Khatam plan -> Free plan par wapas, owner ko notification. Data kuch nahi mitta.
 async function expirePlans(now = new Date()) {
+  if (!require('../utils/plans').billingEnabled()) return 0; // payment band: koi plan khatam nahi hota
   const plans = await loadPlans();
   const free = plans.free;
   if (!free) return 0;
@@ -216,6 +221,7 @@ async function expirePlans(now = new Date()) {
 
 // Paid plan khatam hone se 3 din pehle aur 1 din pehle yaad dilao (har padaav par ek hi baar)
 async function planExpiring(now = new Date()) {
+  if (!require('../utils/plans').billingEnabled()) return 0; // payment band: 'plan khatam' ka message nahi
   const plans = await loadPlans();
   const paid = [...plans.byId.values()].filter((p) => p.pricePaise > 0).map((p) => p._id);
   const shops = await M.Shop.find({ deletedAt: null, 'subscription.status': 'active', 'subscription.planId': { $in: paid },

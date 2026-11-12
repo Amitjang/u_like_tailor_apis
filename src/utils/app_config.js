@@ -46,6 +46,7 @@ function forApp(doc, { platform, version, lang }) {
     storeUrl,
     privacyUrl: c.privacyUrl || d.privacyUrl,
     termsUrl: c.termsUrl || d.termsUrl,
+    billingEnabled: require('./plans').billingEnabled(), // false = payment band, sab free
   };
 }
 

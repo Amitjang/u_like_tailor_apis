@@ -1,7 +1,7 @@
 // End-to-end test: login se lekar subscription kharid, sync aur worker tak poora flow — English + Hindi dono.
 // KHAALI database par server in settings ke saath chalayein:
 //   MONGO_URI=mongodb://127.0.0.1:27017/tailor_e2e PORT=8080 DEV_FIXED_OTP=123456 RUN_WORKER=true ADMIN_PHONES=9876543210
-//   RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e_key_secret RAZORPAY_WEBHOOK_SECRET=e2e_wh_secret
+//   (server aur ye test dono BILLING_ENABLED=true ke saath) RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e_key_secret RAZORPAY_WEBHOOK_SECRET=e2e_wh_secret
 //   RAZORPAY_BASE_URL=http://127.0.0.1:8099      (yeh test khud ek nakli Razorpay server chalata hai)
 // phir:  MONGO_URI=... API_URL=http://localhost:8080/api npm run e2e
 // (Test purane path likhta hai — toApi() unhe naye /api/... path + X-Shop-Id header mein badalta hai.)

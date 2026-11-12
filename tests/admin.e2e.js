@@ -34,6 +34,7 @@ async function waitFor(fn, ms = 20000) {
 async function main() {
   const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tailor_admin_e2e';
   Object.assign(process.env, {
+    BILLING_ENABLED: 'true', // plan + payment wala raasta test karo (free mode: tests/free.e2e.js)
     MONGO_URI: uri, PORT: String(API_PORT), DEV_FIXED_OTP: '123456', RUN_WORKER: 'false', APP_ENV: 'dev',
     ADMIN_PHONES: '9876543210', ADMIN_EMAILS: 'boss@example.com', PAYMENT_PROVIDER: 'none', RAZORPAY_KEY_ID: '', WA_PROVIDER: 'log', OTP_PROVIDER: 'log',
     FIREBASE_SERVICE_ACCOUNT_BASE64: '',

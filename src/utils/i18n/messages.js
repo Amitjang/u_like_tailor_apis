@@ -250,6 +250,7 @@ module.exports = {
   notif_bk_soon_body: ["Your visit is at %[2]s", "आपका समय %[2]s है"],
   notif_bk_completed_title: ["How was %s?", "%s कैसा लगा?"],
   notif_bk_completed_body: ["Rate your visit — it helps other customers", "रेटिंग दें — दूसरे ग्राहकों की मदद होगी"],
+  billing_off: ["Payments have not started yet — all features are free right now", "पेमेंट अभी शुरू नहीं हुआ — अभी सारी सुविधाएँ मुफ़्त हैं"],
   admin_readonly: ["Your admin access is view-only", "आपका एडमिन एक्सेस सिर्फ देखने के लिए है"],
   shop_blocked: ["This shop has been blocked. Contact U Like Tailor support.", "यह दुकान बंद कर दी गई है। U Like Tailor सपोर्ट से संपर्क करें।"],
   admin_exists: ["This email is already an admin", "यह ईमेल पहले से एडमिन है"],

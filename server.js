@@ -14,7 +14,7 @@ async function main() {
 
   const PORT = cfg.port;
   const server = app.listen(PORT, () =>
-    console.log(`Server running on port ${PORT} (env: ${cfg.env}, payments: ${cfg.paymentProvider}, whatsapp: ${app.locals.wa.name})`)
+    console.log(`Server running on port ${PORT} (env: ${cfg.env}, payments: ${cfg.billingEnabled ? cfg.paymentProvider : "OFF (sab free)"}, whatsapp: ${app.locals.wa.name})`)
   );
   const stopWorker = cfg.runWorker ? worker.start({ wa: app.locals.wa, publicBaseUrl: cfg.publicBaseUrl }) : null;
 

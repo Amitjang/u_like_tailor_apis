@@ -69,6 +69,7 @@ function load() {
     googleTokenUrl: get('GOOGLE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
   };
   c.paymentProvider = get('PAYMENT_PROVIDER', c.razorpayKeyId ? 'razorpay' : 'none');
+  c.billingEnabled = get('BILLING_ENABLED', 'false').toLowerCase() === 'true'; // false = sab free (launch offer)
   c.isProd = c.env === 'prod';
 
   for (const p of list(process.env.ADMIN_PHONES)) {
